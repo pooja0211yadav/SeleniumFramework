@@ -1,0 +1,11 @@
+package cucumber;
+
+import io.cucumber.testng.AbstractTestNGCucumberTests;
+import io.cucumber.testng.CucumberOptions;
+
+@CucumberOptions(features="src/test/java/cucumber",glue="Selenium.StepDefinitions",monochrome=true,tags="@Regression", plugin={"html:target/cucumber.html"})
+public class TestNGTestRunner extends AbstractTestNGCucumberTests
+{
+
+}
+//cucumber -> TestNG, junit    *to run cucumber feature file we need help of testng or junit
