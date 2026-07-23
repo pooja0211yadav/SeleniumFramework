@@ -30,67 +30,37 @@ public class BaseTest {
 	public WebDriver driver;
 
 	public WebDriver initializeDriver() throws IOException {
-		Properties prop = new Properties();
+    Properties prop = new Properties();
 
-		// Cross-platform file path using forward slashes
-		FileInputStream fis = new FileInputStream(
-				System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties");
-		prop.load(fis);
+    FileInputStream fis = new FileInputStream(
+            System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties");
+    prop.load(fis);
 
-		// Read browser parameter from Maven (-Dbrowser=chromeheadless) or fallback to GlobalData.properties
-		String browserName = System.getProperty("browser") != null 
-				? System.getProperty("browser")
-				: prop.getProperty("browser");
+    String browserName = System.getProperty("browser") != null 
+            ? System.getProperty("browser")
+            : prop.getProperty("browser");
 
+    if (browserName.contains("chrome")) {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920,1080");
 
-
-		if (browserName.contains("chrome")) {
-    WebDriverManager.chromedriver().setup();
-    ChromeOptions options = new ChromeOptions();
-
-    if (browserName.contains("headless")) {
-        options.addArguments("--headless=new");
-    }
-    options.addArguments("--no-sandbox");
-    options.addArguments("--disable-dev-shm-usage");
-    options.addArguments("--window-size=1920,1080");
-
-    // Explicitly check for Debian/Ubuntu chromium path
-    File chromiumBinary = new File("/usr/bin/chromium");
-    File altChromiumBinary = new File("/usr/bin/chromium-browser");
-    File chromeBinary = new File("/usr/bin/google-chrome");
-
-    if (chromiumBinary.exists()) {
-        options.setBinary(chromiumBinary);
-    } else if (altChromiumBinary.exists()) {
-        options.setBinary(altChromiumBinary);
-    } else if (chromeBinary.exists()) {
-        options.setBinary(chromeBinary);
+        if (browserName.contains("headless")) {
+            options.addArguments("--headless=new");
+            
+            // Connect to the standalone Chrome container via Docker's host gateway
+            URL gridUrl = new URL("http://host.docker.internal:4444/wd/hub");
+            driver = new RemoteWebDriver(gridUrl, options);
+        } else {
+            WebDriverManager.chromedriver().setup();
+            driver = new ChromeDriver(options);
+        }
     }
 
-    driver = new ChromeDriver(options);
+    driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+    return driver;
 }
-
-
-
-
-
-			
-		} else if (browserName.equalsIgnoreCase("firefox")) {
-			// Firefox implementation
-		} else if (browserName.equalsIgnoreCase("edge")) {
-			// Edge implementation
-		}
-
-		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-
-		// Maximize window only when running with a visible GUI
-		if (!browserName.contains("headless")) {
-			driver.manage().window().maximize();
-		}
-
-		return driver;
-	}
 
 	public List<HashMap<String, String>> getJsonDataToMap(String filePath) throws IOException {
 		String jsonContent = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
