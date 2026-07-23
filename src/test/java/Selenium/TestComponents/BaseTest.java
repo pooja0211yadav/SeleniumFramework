@@ -30,7 +30,12 @@ public class BaseTest
 	public WebDriver initializeDriver() throws IOException
 	{
 		Properties prop = new Properties();
-		FileInputStream fis = new FileInputStream(System.getProperty("user.dir")+ "\\src\\main\\java\\Sel\\resources\\GlobatData.properties");
+
+FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties"); // Use forward slashes '/'
+
+
+		
+//		FileInputStream fis = new FileInputStream(System.getProperty("user.dir")+ "\\src\\main\\java\\Sel\\resources\\GlobatData.properties");
 		prop.load(fis);
 		String browserName = prop.getProperty("browser");
 		
