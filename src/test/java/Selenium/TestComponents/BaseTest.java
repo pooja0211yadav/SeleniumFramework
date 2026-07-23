@@ -3,6 +3,7 @@ package Selenium.TestComponents;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URL; // <-- Fixes 'cannot find symbol: class URL'
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.RemoteWebDriver; // <-- Fixes 'cannot find symbol: class RemoteWebDriver'
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -30,37 +32,48 @@ public class BaseTest {
 	public WebDriver driver;
 
 	public WebDriver initializeDriver() throws IOException {
-    Properties prop = new Properties();
+		Properties prop = new Properties();
 
-    FileInputStream fis = new FileInputStream(
-            System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties");
-    prop.load(fis);
+		// Cross-platform file path using forward slashes
+		FileInputStream fis = new FileInputStream(
+				System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties");
+		prop.load(fis);
 
-    String browserName = System.getProperty("browser") != null 
-            ? System.getProperty("browser")
-            : prop.getProperty("browser");
+		// Read browser parameter from Maven (-Dbrowser=chromeheadless) or fallback to properties file
+		String browserName = System.getProperty("browser") != null 
+				? System.getProperty("browser")
+				: prop.getProperty("browser");
 
-    if (browserName.contains("chrome")) {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--window-size=1920,1080");
+		if (browserName.contains("chrome")) {
+			ChromeOptions options = new ChromeOptions();
+			options.addArguments("--no-sandbox");
+			options.addArguments("--disable-dev-shm-usage");
+			options.addArguments("--window-size=1920,1080");
 
-        if (browserName.contains("headless")) {
-            options.addArguments("--headless=new");
-            
-            // Connect to the standalone Chrome container via Docker's host gateway
-            URL gridUrl = new URL("http://host.docker.internal:4444/wd/hub");
-            driver = new RemoteWebDriver(gridUrl, options);
-        } else {
-            WebDriverManager.chromedriver().setup();
-            driver = new ChromeDriver(options);
-        }
-    }
+			if (browserName.contains("headless")) {
+				options.addArguments("--headless=new");
+				
+				// Connects to the standalone Chrome container via host gateway
+				URL gridUrl = new URL("http://host.docker.internal:4444/wd/hub");
+				driver = new RemoteWebDriver(gridUrl, options);
+			} else {
+				WebDriverManager.chromedriver().setup();
+				driver = new ChromeDriver(options);
+			}
+		} else if (browserName.equalsIgnoreCase("firefox")) {
+			// Firefox implementation
+		} else if (browserName.equalsIgnoreCase("edge")) {
+			// Edge implementation
+		}
 
-    driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-    return driver;
-}
+		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+
+		if (!browserName.contains("headless")) {
+			driver.manage().window().maximize();
+		}
+
+		return driver;
+	}
 
 	public List<HashMap<String, String>> getJsonDataToMap(String filePath) throws IOException {
 		String jsonContent = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
@@ -86,7 +99,6 @@ public class BaseTest {
 
 	@AfterMethod(alwaysRun = true)
 	public void tearDown() {
-		// Prevents NullPointerException if driver setup fails in @BeforeMethod
 		if (driver != null) {
 			driver.quit();
 		}
