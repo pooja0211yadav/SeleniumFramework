@@ -42,29 +42,40 @@ public class BaseTest {
 				? System.getProperty("browser")
 				: prop.getProperty("browser");
 
+
+
 		if (browserName.contains("chrome")) {
-			WebDriverManager.chromedriver().setup();
-			ChromeOptions options = new ChromeOptions();
+    WebDriverManager.chromedriver().setup();
+    ChromeOptions options = new ChromeOptions();
 
-			// Essential flags for running Chrome inside Linux/Docker containers
-			if (browserName.contains("headless")) {
-				options.addArguments("--headless=new");
-			}
-			options.addArguments("--no-sandbox");
-			options.addArguments("--disable-dev-shm-usage");
-			options.addArguments("--window-size=1920,1080");
+    if (browserName.contains("headless")) {
+        options.addArguments("--headless=new");
+    }
+    options.addArguments("--no-sandbox");
+    options.addArguments("--disable-dev-shm-usage");
+    options.addArguments("--window-size=1920,1080");
 
-			// Auto-detect installed Google Chrome or Chromium binary inside Docker
-			File chromeBinary = new File("/usr/bin/google-chrome");
-			File chromiumBinary = new File("/usr/bin/chromium-browser");
+    // Explicitly check for Debian/Ubuntu chromium path
+    File chromiumBinary = new File("/usr/bin/chromium");
+    File altChromiumBinary = new File("/usr/bin/chromium-browser");
+    File chromeBinary = new File("/usr/bin/google-chrome");
 
-			if (chromeBinary.exists()) {
-				options.setBinary(chromeBinary);
-			} else if (chromiumBinary.exists()) {
-				options.setBinary(chromiumBinary);
-			}
+    if (chromiumBinary.exists()) {
+        options.setBinary(chromiumBinary);
+    } else if (altChromiumBinary.exists()) {
+        options.setBinary(altChromiumBinary);
+    } else if (chromeBinary.exists()) {
+        options.setBinary(chromeBinary);
+    }
 
-			driver = new ChromeDriver(options);
+    driver = new ChromeDriver(options);
+}
+
+
+
+
+
+			
 		} else if (browserName.equalsIgnoreCase("firefox")) {
 			// Firefox implementation
 		} else if (browserName.equalsIgnoreCase("edge")) {
