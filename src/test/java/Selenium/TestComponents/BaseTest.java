@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -33,38 +32,48 @@ public class BaseTest {
 	public WebDriver initializeDriver() throws IOException {
 		Properties prop = new Properties();
 
-		// Cross-platform path separator
+		// Cross-platform file path using forward slashes
 		FileInputStream fis = new FileInputStream(
 				System.getProperty("user.dir") + "/src/main/java/Sel/resources/GlobalData.properties");
 		prop.load(fis);
 
-		// Read browser parameter from Maven (-Dbrowser=chrome) or fallback to GlobalData.properties
-		String browserName = System.getProperty("browser") != null ? System.getProperty("browser")
+		// Read browser parameter from Maven (-Dbrowser=chromeheadless) or fallback to GlobalData.properties
+		String browserName = System.getProperty("browser") != null 
+				? System.getProperty("browser")
 				: prop.getProperty("browser");
 
 		if (browserName.contains("chrome")) {
 			WebDriverManager.chromedriver().setup();
 			ChromeOptions options = new ChromeOptions();
 
-			// Necessary arguments for running in Docker/Jenkins Linux environment
+			// Essential flags for running Chrome inside Linux/Docker containers
 			if (browserName.contains("headless")) {
 				options.addArguments("--headless=new");
 			}
-			
 			options.addArguments("--no-sandbox");
 			options.addArguments("--disable-dev-shm-usage");
 			options.addArguments("--window-size=1920,1080");
 
+			// Auto-detect installed Google Chrome or Chromium binary inside Docker
+			File chromeBinary = new File("/usr/bin/google-chrome");
+			File chromiumBinary = new File("/usr/bin/chromium-browser");
+
+			if (chromeBinary.exists()) {
+				options.setBinary(chromeBinary);
+			} else if (chromiumBinary.exists()) {
+				options.setBinary(chromiumBinary);
+			}
+
 			driver = new ChromeDriver(options);
 		} else if (browserName.equalsIgnoreCase("firefox")) {
-			// firefox implementation
+			// Firefox implementation
 		} else if (browserName.equalsIgnoreCase("edge")) {
-			// edge implementation
+			// Edge implementation
 		}
 
 		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
-		// Maximize browser if running with standard GUI mode
+		// Maximize window only when running with a visible GUI
 		if (!browserName.contains("headless")) {
 			driver.manage().window().maximize();
 		}
@@ -73,15 +82,9 @@ public class BaseTest {
 	}
 
 	public List<HashMap<String, String>> getJsonDataToMap(String filePath) throws IOException {
-		// read json to string
 		String jsonContent = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
-
-		// String to HashMap - Jackson Databind
 		ObjectMapper mapper = new ObjectMapper();
-		List<HashMap<String, String>> data = mapper.readValue(jsonContent,
-				new TypeReference<List<HashMap<String, String>>>() {
-				});
-		return data;
+		return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {});
 	}
 
 	public String getScreenshot(String testCaseName, WebDriver driver) throws IOException {
@@ -95,7 +98,6 @@ public class BaseTest {
 	@BeforeMethod(alwaysRun = true)
 	public LandingPage launchApplication() throws IOException {
 		driver = initializeDriver();
-
 		landingPage = new LandingPage(driver);
 		landingPage.goTo();
 		return landingPage;
